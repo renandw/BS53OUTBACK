@@ -1,0 +1,3 @@
+
+openssl sha384 -binary -out firmware/BS53OUTBACK.bin.sig firmware/BS53OUTBACK.bin
+printf "%08x" `cat firmware/BS53OUTBACK.bin | wc -c`| xxd -r -p >>firmware/BS53OUTBACK.bin.sig
