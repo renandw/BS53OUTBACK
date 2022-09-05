@@ -31,6 +31,8 @@ const int relay_gpio_3 = 4;
 const int relay_gpio_4 = 5;
 // The GPIO pin that is connected to RELAY#5 on the board.
 const int relay_gpio_5 = 12;
+// The GPIO pin that is connected to RELAY#5 on the board.
+const int relay_gpio_6 = 16;
 
 //OCCUPANCY SENSORS PINS
 //Sensor PIN
@@ -49,10 +51,10 @@ const int relay_gpio_5 = 12;
 //HOMEKIT CHARACTERISTIC SECTION
 homekit_characteristic_t occupancy_detected = HOMEKIT_CHARACTERISTIC_(OCCUPANCY_DETECTED, 0);
 homekit_characteristic_t ota_trigger  = API_OTA_TRIGGER;
-homekit_characteristic_t manufacturer = HOMEKIT_CHARACTERISTIC_(MANUFACTURER,  "renandw");
-homekit_characteristic_t serial       = HOMEKIT_CHARACTERISTIC_(SERIAL_NUMBER, "BS53289B5E");
-homekit_characteristic_t model        = HOMEKIT_CHARACTERISTIC_(MODEL,         "BS53OUTBACK");
-homekit_characteristic_t revision     = HOMEKIT_CHARACTERISTIC_(FIRMWARE_REVISION,  "1.0.0");
+homekit_characteristic_t manufacturer = HOMEKIT_CHARACTERISTIC_(MANUFACTURER,  "X");
+homekit_characteristic_t serial       = HOMEKIT_CHARACTERISTIC_(SERIAL_NUMBER, "1");
+homekit_characteristic_t model        = HOMEKIT_CHARACTERISTIC_(MODEL,         "Z");
+homekit_characteristic_t revision     = HOMEKIT_CHARACTERISTIC_(FIRMWARE_REVISION,  "0.0.0");
 homekit_characteristic_t name = HOMEKIT_CHARACTERISTIC_(NAME, "BS53OUTBACK");
 
 
@@ -97,7 +99,7 @@ void lightbulb_on_2_callback(homekit_characteristic_t *_ch, homekit_value_t on, 
 void lightbulb_on_3_callback(homekit_characteristic_t *_ch, homekit_value_t on, void *context);
 void lightbulb_on_4_callback(homekit_characteristic_t *_ch, homekit_value_t on, void *context);
 void lightbulb_on_5_callback(homekit_characteristic_t *_ch, homekit_value_t on, void *context);
-
+void lightbulb_on_6_callback(homekit_characteristic_t *_ch, homekit_value_t on, void *context);
 
 
 
@@ -121,6 +123,9 @@ void relay_write_5(bool on) {
         gpio_write(relay_gpio_5, on ? 0 : 1);
 }
 
+void relay_write_6(bool on) {
+        gpio_write(relay_gpio_6, on ? 0 : 1);
+}
 
 homekit_characteristic_t lightbulb_on_1 = HOMEKIT_CHARACTERISTIC_(
         ON, false, .callback=HOMEKIT_CHARACTERISTIC_CALLBACK(lightbulb_on_1_callback)
@@ -142,6 +147,10 @@ homekit_characteristic_t lightbulb_on_5 = HOMEKIT_CHARACTERISTIC_(
         ON, false, .callback=HOMEKIT_CHARACTERISTIC_CALLBACK(lightbulb_on_5_callback)
         );
 
+homekit_characteristic_t lightbulb_on_6 = HOMEKIT_CHARACTERISTIC_(
+        ON, false, .callback=HOMEKIT_CHARACTERISTIC_CALLBACK(lightbulb_on_6_callback)
+        );
+
 void gpio_init() {
 
         gpio_enable(relay_gpio_1, GPIO_OUTPUT);
@@ -158,6 +167,9 @@ void gpio_init() {
 
         gpio_enable(relay_gpio_5, GPIO_OUTPUT);
         relay_write_5(lightbulb_on_5.value.bool_value);
+
+        gpio_enable(relay_gpio_6, GPIO_OUTPUT);
+        relay_write_6(lightbulb_on_6.value.bool_value);
 
         gpio_enable(SENSOR_PIN, GPIO_INPUT);
         gpio_enable(TOGGLE_PIN, GPIO_INPUT);
@@ -181,6 +193,10 @@ void lightbulb_on_4_callback(homekit_characteristic_t *_ch, homekit_value_t on, 
 
 void lightbulb_on_5_callback(homekit_characteristic_t *_ch, homekit_value_t on, void *context) {
         relay_write_5(lightbulb_on_5.value.bool_value);
+}
+
+void lightbulb_on_6_callback(homekit_characteristic_t *_ch, homekit_value_t on, void *context) {
+        relay_write_6(lightbulb_on_6.value.bool_value);
 }
 
 //TOGGLE CALLBACKS
@@ -235,12 +251,17 @@ homekit_accessory_t *accessories[] = {
                         &lightbulb_on_4,
                         NULL
                 }),
+                HOMEKIT_SERVICE(LIGHTBULB, .characteristics=(homekit_characteristic_t*[]){
+                        HOMEKIT_CHARACTERISTIC(NAME, "Lâmpada 6"),
+                        &lightbulb_on_6,
+                        NULL
+                }),
                 NULL
         }),
         HOMEKIT_ACCESSORY(.id=2, .category=homekit_accessory_category_switch, .services=(homekit_service_t*[]){
                 HOMEKIT_SERVICE(ACCESSORY_INFORMATION, .characteristics=(homekit_characteristic_t*[]){
                         HOMEKIT_CHARACTERISTIC(IDENTIFY, light_identify),
-                        HOMEKIT_CHARACTERISTIC(NAME, "Lâmpada 6"),
+                        HOMEKIT_CHARACTERISTIC(NAME, "Lâmpada 5"),
                         &manufacturer,
                         &serial,
                         &model,
@@ -308,7 +329,6 @@ void on_wifi_ready() {
 void user_init(void) {
         uart_set_baud(0, 115200);
         create_accessory_name();
-        wifi_config_init("BS53OUTBACK", NULL, on_wifi_ready);
         gpio_init();
 
         int c_hash=ota_read_sysparam(&manufacturer.value.string_value,&serial.value.string_value,
